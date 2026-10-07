@@ -15,6 +15,25 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+
+class CausalConv1d(nn.Module):
+    """ 1D causal convolution"""
+
+
+    def __init__(self, in_channels, out_channels, kernel_size):
+        super().__init__()
+        self.padding = kernel_size - 1
+        self.conv = nn.Conv1d(
+            in_channels,
+            out_channels,
+            kernel_size,
+            padding=0
+        )
+
+    def forward(self, x):
+        x = F.pad(x, (self.padding, 0))
+        return self.conv(x)
+
 class LayerNorm(nn.Module):
     """ LayerNorm but with an optional bias. PyTorch doesn't support simply bias=False """
 
@@ -115,6 +134,9 @@ class GPTConfig:
     dropout: float = 0.0
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
+    use_cnn: bool = False
+    cnn_kernel_size: int = 3
+
 class GPT(nn.Module):
 
     def __init__(self, config):
@@ -122,6 +144,15 @@ class GPT(nn.Module):
         assert config.vocab_size is not None
         assert config.block_size is not None
         self.config = config
+
+        self.cnn = None
+
+        if config.use_cnn:
+            self.cnn = CausalConv1d(
+                config.n_embd,
+                config.n_embd,
+                kernel_size=config.cnn_kernel_size
+            )
 
         self.transformer = nn.ModuleDict(dict(
             wte = nn.Embedding(config.vocab_size, config.n_embd),
@@ -167,6 +198,11 @@ class GPT(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
+        elif isinstance(module, nn.Conv1d):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+
     def forward(self, idx, targets=None):
         device = idx.device
         b, t = idx.size()
@@ -177,6 +213,12 @@ class GPT(nn.Module):
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)
+
+        if self.cnn is not None:
+            x = x.transpose(1, 2)  # (b, n_embd, t) for causal conv
+            x = self.cnn(x)
+            x = x.transpose(1, 2)  # (b, t, n_embd) for transformer blocks
+
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
