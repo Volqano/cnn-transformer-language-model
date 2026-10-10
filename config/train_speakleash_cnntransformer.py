@@ -3,13 +3,13 @@
 #   python train.py config/train_speakleash.py
 
 # WandB
-wandb_log = False
-wandb_project = 'speakleash'
-wandb_run_name = 'bielik-cnn-transformer'
+wandb_log = True
+wandb_project = 'polish-cnn-transformer'
+wandb_run_name = 'cnn-transformer-k3-5000'
 
 # dataset and output
 dataset = 'speakleash'
-out_dir = 'out-speakleash-cnn'
+out_dir = 'out-speakleash-cnn-transformer-k3-5000'
 
 # Model
 block_size = 1024
@@ -27,7 +27,7 @@ cnn_kernel_size = 3
 
 # Training
 learning_rate = 6e-4
-max_iters = 2000
+max_iters = 5000
 weight_decay = 1e-1
 beta1 = 0.9
 beta2 = 0.95
@@ -36,12 +36,12 @@ grad_clip = 1.0
 # Learning rate schedule
 decay_lr = True
 warmup_iters = 200
-lr_decay_iters = 2000
+lr_decay_iters = 5000
 min_lr = 6e-5
 
 # Evaluation and logging
-eval_interval = 200
-eval_iters = 50
+eval_interval = 250
+eval_iters = 20
 log_interval = 10
 always_save_checkpoint = True
 
