@@ -5,7 +5,7 @@
 # WandB
 wandb_log = True
 wandb_project = 'polish-cnn-transformer'
-wandb_run_name = 'transformer-baseline-5000'
+wandb_run_name = f'transformer-baseline-5000-seed{seed}'
 
 # dataset and output
 dataset = 'speakleash'
