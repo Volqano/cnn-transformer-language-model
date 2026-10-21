@@ -116,11 +116,26 @@ class Block(nn.Module):
         super().__init__()
         self.ln_1 = LayerNorm(config.n_embd, bias=config.bias)
         self.attn = CausalSelfAttention(config)
+
+        self.cnn = None
+        if config.cnn_type == "block":
+            self.ln_cnn = LayerNorm(config.n_embd, bias=config.bias)
+            self.cnn = CausalConv1d(
+                config.n_embd,
+                config.n_embd,
+                kernel_size=config.cnn_kernel_size
+            )
+
         self.ln_2 = LayerNorm(config.n_embd, bias=config.bias)
         self.mlp = MLP(config)
 
     def forward(self, x):
         x = x + self.attn(self.ln_1(x))
+
+        if self.cnn is not None:
+            cnn_out = self.ln_cnn(x).transpose(1, 2)  # (b, n_embd, t) for causal conv
+            cnn_out = self.cnn(cnn_out).transpose(1, 2)  # (b, t, n_embd) for transformer blocks
+            x = x + cnn_out
         x = x + self.mlp(self.ln_2(x))
         return x
 
@@ -134,7 +149,7 @@ class GPTConfig:
     dropout: float = 0.0
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
-    use_cnn: bool = False
+    cnn_type: str = "none"  # "none", "input", "block"
     cnn_kernel_size: int = 3
 
 class GPT(nn.Module):
@@ -147,7 +162,7 @@ class GPT(nn.Module):
 
         self.cnn = None
 
-        if config.use_cnn:
+        if config.cnn_type == "input":
             self.cnn = CausalConv1d(
                 config.n_embd,
                 config.n_embd,

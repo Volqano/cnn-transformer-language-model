@@ -10,11 +10,11 @@ from model import GPTConfig, GPT
 # -----------------------------------------------------------------------------
 init_from = 'resume' # either 'resume' (from an out_dir) or a gpt2 variant (e.g. 'gpt2-xl')
 out_dir = 'outs' # ignored if init_from is not 'resume'
-start = "P. Diddy był człowiekiem" # or "<|endoftext|>" or etc. Can also specify a file, use as: "FILE:prompt.txt"
-num_samples = 10 # number of samples to draw
-max_new_tokens = 500 # number of tokens generated in each sample
+start = "Muzyka klasyczna" # or "<|endoftext|>" or etc. Can also specify a file, use as: "FILE:prompt.txt"
+num_samples = 3 # number of samples to draw
+max_new_tokens = 200 # number of tokens generated in each sample
 temperature = 0.8 # 1.0 = no change, < 1.0 = less random, > 1.0 = more random, in predictions
-top_k = 200 # retain only the top_k most likely tokens, clamp others to have 0 probability
+top_k = 100 # retain only the top_k most likely tokens, clamp others to have 0 probability
 seed = 1337
 device = 'mps' if torch.backends.mps.is_available() else 'cpu'
 dtype = 'float32'
@@ -36,7 +36,7 @@ ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=
 if init_from == 'resume':
     # init from a model saved in a specific directory
     #ckpt_path = os.path.join(out_dir, 'transformer-5000.pt')
-    ckpt_path = os.path.join(out_dir, 'cnn-transformer-5000-k3.pt')
+    ckpt_path = os.path.join(out_dir, 'cnn-transformer-5000-k3-6heads.pt')
     checkpoint = torch.load(ckpt_path, map_location=device)
     gptconf = GPTConfig(**checkpoint['model_args'])
     model = GPT(gptconf)

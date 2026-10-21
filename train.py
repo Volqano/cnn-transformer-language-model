@@ -54,7 +54,7 @@ n_head = 12
 n_embd = 768
 dropout = 0.0 # for pretraining 0 is good, for finetuning try 0.1+
 bias = False # do we use bias inside LayerNorm and Linear layers?
-use_cnn = False
+cnn_type = "none"
 cnn_kernel_size = 3
 seed = 42
 # adamw optimizer
@@ -106,7 +106,7 @@ print(f"tokens per iteration will be: {tokens_per_iter:,}")
 
 if master_process:
     os.makedirs(out_dir, exist_ok=True)
-torch.manual_seed(1337 + seed_offset)
+torch.manual_seed(seed + seed_offset)
 torch.backends.cuda.matmul.allow_tf32 = True # allow tf32 on matmul
 torch.backends.cudnn.allow_tf32 = True # allow tf32 on cudnn
 device_type = 'cuda' if 'cuda' in device else 'cpu' # for later use in torch.autocast
@@ -155,7 +155,7 @@ model_args = dict(
     bias=bias,
     vocab_size=None,
     dropout=dropout,
-    use_cnn=use_cnn,
+    cnn_type=cnn_type,
     cnn_kernel_size=cnn_kernel_size,
 )  # start with model_args from command line
 if init_from == 'scratch':
@@ -175,7 +175,7 @@ elif init_from == 'resume':
     checkpoint_model_args = checkpoint['model_args']
     # force these config attributes to be equal otherwise we can't even resume training
     # the rest of the attributes (e.g. dropout) can stay as desired from command line
-    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'use_cnn', 'cnn_kernel_size']:
+    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'cnn_type', 'cnn_kernel_size']:
         if k in checkpoint_model_args:
             model_args[k] = checkpoint_model_args[k]
     # create the model
@@ -197,7 +197,7 @@ elif init_from.startswith('gpt2'):
     override_args = dict(dropout=dropout)
     model = GPT.from_pretrained(init_from, override_args)
     # read off the created config params, so we can store them into checkpoint correctly
-    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'use_cnn', 'cnn_kernel_size']:
+    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'cnn_type', 'cnn_kernel_size']:
         if hasattr(model.config, k):
             model_args[k] = getattr(model.config, k)
 # crop down the model block size if desired, using model surgery
