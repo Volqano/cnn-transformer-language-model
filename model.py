@@ -197,6 +197,7 @@ class GPTConfig:
 
     use_cnn_input: bool = False
     use_cnn_block: bool = False
+    use_cnn_residual: bool = True
     cnn_kernel_size: int = 3
     cnn_num_layers: int = 1
 
@@ -211,12 +212,23 @@ class GPT(nn.Module):
         self.cnn = None
 
         if config.use_cnn_input:
-            self.cnn = CausalConv1d(
-                config.n_embd,
-                config.n_embd,
-                kernel_size=config.cnn_kernel_size,
-                num_layers=config.cnn_num_layers,
-            )
+            if config.use_cnn_residual:
+                self.cnn = nn.Sequential(
+                    *[
+                        ResidualCausalConvBlock(
+                            config.n_embd,
+                            config.cnn_kernel_size
+                        )
+                        for _ in range(config.cnn_num_layers)
+                    ]
+                )
+            else:
+                self.cnn = CausalConv1d(
+                    config.n_embd,
+                    config.n_embd,
+                    kernel_size=config.cnn_kernel_size,
+                    num_layers=config.cnn_num_layers,
+                )
 
         self.transformer = nn.ModuleDict(dict(
             wte = nn.Embedding(config.vocab_size, config.n_embd),

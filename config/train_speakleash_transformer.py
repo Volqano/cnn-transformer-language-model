@@ -24,6 +24,7 @@ bias = False
 # CNN
 use_cnn_input = False
 use_cnn_block = False
+use_cnn_residual = True
 cnn_kernel_size = 3
 cnn_num_layers = 1
 
