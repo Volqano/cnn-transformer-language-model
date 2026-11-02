@@ -20,7 +20,7 @@ class CausalConv1d(nn.Module):
     """ 1D causal convolution"""
 
 
-    def __init__(self, in_channels, out_channels, kernel_size):
+    def __init__(self, in_channels, out_channels, kernel_size, num_layers=1):
         super().__init__()
         self.padding = kernel_size - 1
         self.conv = nn.Conv1d(
@@ -29,10 +29,56 @@ class CausalConv1d(nn.Module):
             kernel_size,
             padding=0
         )
+        self.layers = nn.ModuleList([
+            nn.Conv1d(
+                out_channels,
+                out_channels,
+                kernel_size,
+                padding=0
+            )
+            for _ in range(num_layers - 1)
+        ])
+
+        self.activation = nn.GELU()
 
     def forward(self, x):
         x = F.pad(x, (self.padding, 0))
-        return self.conv(x)
+        x = self.conv(x)
+        for layer in self.layers:
+            x = self.activation(x)
+            x = layer(F.pad(x, (self.padding, 0)))
+        return x
+
+
+class ResidualCausalConvBlock(nn.Module):
+    def __init__(self, channels, kernel_size):
+        super().__init__()
+        self.padding = kernel_size - 1
+
+        self.conv1 = nn.Conv1d(
+            channels,
+            channels,
+            kernel_size,
+            padding=0
+        )
+        self.conv2 = nn.Conv1d(
+            channels,
+            channels,
+            kernel_size,
+            padding=0
+        )
+
+        self.activation = nn.GELU()
+
+    def forward(self, x):
+        residual = x
+
+        x = self.conv1(F.pad(x, (self.padding, 0)))
+        x = self.activation(x)
+        x = self.conv2(F.pad(x, (self.padding, 0)))
+
+        return self.activation(x + residual)
+
 
 class LayerNorm(nn.Module):
     """ LayerNorm but with an optional bias. PyTorch doesn't support simply bias=False """
@@ -152,6 +198,7 @@ class GPTConfig:
     use_cnn_input: bool = False
     use_cnn_block: bool = False
     cnn_kernel_size: int = 3
+    cnn_num_layers: int = 1
 
 class GPT(nn.Module):
 
@@ -167,7 +214,8 @@ class GPT(nn.Module):
             self.cnn = CausalConv1d(
                 config.n_embd,
                 config.n_embd,
-                kernel_size=config.cnn_kernel_size
+                kernel_size=config.cnn_kernel_size,
+                num_layers=config.cnn_num_layers,
             )
 
         self.transformer = nn.ModuleDict(dict(

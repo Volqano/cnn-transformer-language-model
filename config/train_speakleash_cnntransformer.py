@@ -25,6 +25,7 @@ bias = False
 use_cnn_input = True
 use_cnn_block = False
 cnn_kernel_size = 3
+cnn_num_layers = 1
 
 # Training
 learning_rate = 6e-4
