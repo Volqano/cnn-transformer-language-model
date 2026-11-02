@@ -22,7 +22,8 @@ dropout = 0.0
 bias = False
 
 # CNN
-use_cnn = True
+use_cnn_input = True
+use_cnn_block = False
 cnn_kernel_size = 3
 
 # Training

@@ -14,7 +14,7 @@ TOKENIZER_NAME = "speakleash/Bielik-1.5B-v3"
 DATASET_NAME = "plwiki"
 MAX_DOCS = 100000
 MIN_TEXT_LENGTH = 150
-SPLIT_FRACTION = 0.995
+SPLIT_FRACTION = 0.95
 
 
 def extract_text(doc):

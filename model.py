@@ -118,7 +118,7 @@ class Block(nn.Module):
         self.attn = CausalSelfAttention(config)
 
         self.cnn = None
-        if config.cnn_type == "block":
+        if config.use_cnn_block:
             self.ln_cnn = LayerNorm(config.n_embd, bias=config.bias)
             self.cnn = CausalConv1d(
                 config.n_embd,
@@ -149,7 +149,8 @@ class GPTConfig:
     dropout: float = 0.0
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
-    cnn_type: str = "none"  # "none", "input", "block"
+    use_cnn_input: bool = False
+    use_cnn_block: bool = False
     cnn_kernel_size: int = 3
 
 class GPT(nn.Module):
@@ -162,7 +163,7 @@ class GPT(nn.Module):
 
         self.cnn = None
 
-        if config.cnn_type == "input":
+        if config.use_cnn_input:
             self.cnn = CausalConv1d(
                 config.n_embd,
                 config.n_embd,

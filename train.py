@@ -54,7 +54,8 @@ n_head = 12
 n_embd = 768
 dropout = 0.0 # for pretraining 0 is good, for finetuning try 0.1+
 bias = False # do we use bias inside LayerNorm and Linear layers?
-cnn_type = "none"
+use_cnn_input = False
+use_cnn_block = False
 cnn_kernel_size = 3
 seed = 42
 # adamw optimizer
@@ -155,7 +156,8 @@ model_args = dict(
     bias=bias,
     vocab_size=None,
     dropout=dropout,
-    cnn_type=cnn_type,
+    use_cnn_input=use_cnn_input,
+    use_cnn_block=use_cnn_block,
     cnn_kernel_size=cnn_kernel_size,
 )  # start with model_args from command line
 if init_from == 'scratch':
@@ -175,7 +177,7 @@ elif init_from == 'resume':
     checkpoint_model_args = checkpoint['model_args']
     # force these config attributes to be equal otherwise we can't even resume training
     # the rest of the attributes (e.g. dropout) can stay as desired from command line
-    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'cnn_type', 'cnn_kernel_size']:
+    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'use_cnn_input', 'use_cnn_block', 'cnn_kernel_size']:
         if k in checkpoint_model_args:
             model_args[k] = checkpoint_model_args[k]
     # create the model
@@ -197,7 +199,7 @@ elif init_from.startswith('gpt2'):
     override_args = dict(dropout=dropout)
     model = GPT.from_pretrained(init_from, override_args)
     # read off the created config params, so we can store them into checkpoint correctly
-    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'cnn_type', 'cnn_kernel_size']:
+    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'use_cnn_input', 'use_cnn_block', 'cnn_kernel_size']:
         if hasattr(model.config, k):
             model_args[k] = getattr(model.config, k)
 # crop down the model block size if desired, using model surgery
