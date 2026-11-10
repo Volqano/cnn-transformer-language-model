@@ -45,10 +45,10 @@ class CausalConv1d(nn.Module):
             for _ in range(num_layers - 1)
         ])
 
-        self.projection = nn.Conv1d(
-            cnn_channels,
-            out_channels,
-            kernel_size=1
+        self.projection = (
+            nn.Identity()
+            if cnn_channels == out_channels
+            else nn.Conv1d(cnn_channels, out_channels, kernel_size=1)
         )
 
         self.activation = nn.GELU()
@@ -66,21 +66,31 @@ class CausalConv1d(nn.Module):
 
 
 class ResidualCausalConvBlock(nn.Module):
-    def __init__(self, channels, cnn_channels, kernel_size):
+    def __init__(self, channels, cnn_channels, kernel_size, num_layers=1):
         super().__init__()
         self.padding = kernel_size - 1
 
-        self.conv1 = nn.Conv1d(
+        self.conv = nn.Conv1d(
             channels,
             cnn_channels,
             kernel_size,
             padding=0
         )
-        self.conv2 = nn.Conv1d(
-            cnn_channels,
-            channels,
-            kernel_size,
-            padding=0
+
+        self.layers = nn.ModuleList([
+            nn.Conv1d(
+                cnn_channels,
+                cnn_channels,
+                kernel_size,
+                padding=0
+            )
+            for _ in range(num_layers - 1)
+        ])
+
+        self.projection = (
+            nn.Identity()
+            if cnn_channels == channels
+            else nn.Conv1d(cnn_channels, channels, kernel_size=1)
         )
 
         self.activation = nn.GELU()
@@ -88,9 +98,13 @@ class ResidualCausalConvBlock(nn.Module):
     def forward(self, x):
         residual = x
 
-        x = self.conv1(F.pad(x, (self.padding, 0)))
-        x = self.activation(x)
-        x = self.conv2(F.pad(x, (self.padding, 0)))
+        x = self.conv(F.pad(x, (self.padding, 0)))
+
+        for layer in self.layers:
+            x = self.activation(x)
+            x = layer(F.pad(x, (self.padding, 0)))
+
+        x = self.projection(x)
 
         return self.activation(x + residual)
 
