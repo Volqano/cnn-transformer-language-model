@@ -59,6 +59,7 @@ use_cnn_block = False
 use_cnn_residual = True
 cnn_kernel_size = 3
 cnn_num_layers = 1
+cnn_channels = 768
 seed = 42
 # adamw optimizer
 learning_rate = 6e-4 # max learning rate
@@ -163,6 +164,7 @@ model_args = dict(
     use_cnn_residual=use_cnn_residual,
     cnn_kernel_size=cnn_kernel_size,
     cnn_num_layers=cnn_num_layers,
+    cnn_channels=cnn_channels
 )  # start with model_args from command line
 if init_from == 'scratch':
     # init a new model from scratch
@@ -181,7 +183,7 @@ elif init_from == 'resume':
     checkpoint_model_args = checkpoint['model_args']
     # force these config attributes to be equal otherwise we can't even resume training
     # the rest of the attributes (e.g. dropout) can stay as desired from command line
-    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'use_cnn_input', 'use_cnn_block', 'use_cnn_residual', 'cnn_kernel_size', 'cnn_num_layers']:
+    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'use_cnn_input', 'use_cnn_block', 'use_cnn_residual', 'cnn_kernel_size', 'cnn_num_layers', 'cnn_channels']:
         if k in checkpoint_model_args:
             model_args[k] = checkpoint_model_args[k]
     # create the model
@@ -203,7 +205,7 @@ elif init_from.startswith('gpt2'):
     override_args = dict(dropout=dropout)
     model = GPT.from_pretrained(init_from, override_args)
     # read off the created config params, so we can store them into checkpoint correctly
-    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'use_cnn_input', 'use_cnn_block', 'use_cnn_residual', 'cnn_kernel_size', 'cnn_num_layers']:
+    for k in ['n_layer', 'n_head', 'n_embd', 'block_size', 'bias', 'vocab_size', 'use_cnn_input', 'use_cnn_block', 'use_cnn_residual', 'cnn_kernel_size', 'cnn_num_layers', 'cnn_channels']:
         if hasattr(model.config, k):
             model_args[k] = getattr(model.config, k)
 # crop down the model block size if desired, using model surgery
